@@ -43,7 +43,7 @@ parser.add_argument('--dataset', help="dataset for training and testing", defaul
 parser.add_argument('--training_size', help="size of training set", type=int, default=1000)
 parser.add_argument('--method', help="method of optimisation", default='Adam')
 parser.add_argument('--num_epochs', help="number of epochs", type=int, default=100)
-parser.add_argument('--force_train', help="force training", type=bool, default=True)
+parser.add_argument('--force_train', help="force training", type=bool, default=False)
 
 args = parser.parse_args()
 
@@ -73,7 +73,7 @@ test_labels = utils.numpy_to_torch(test_labels).type(torch.LongTensor)
 
 hidden_dim = 10000
 num_classes = output_dim
-# num_epochs = 100
+# num_epochs = 1000
 # training_method = 'SGD'
 
 model = nonlinear_tools.feedforward_network(input_dim, hidden_dim, output_dim)
@@ -90,8 +90,8 @@ elif training_method == 'Adam':
 
 # %% TRAINING
 
-# force_train = True
-# training_size = 100
+# force_train = False
+# training_size = 2000
 
 os.makedirs('./../models/ex2', exist_ok=True)
 path = './../models/ex2/'
@@ -132,7 +132,9 @@ else:
     
 
 # %% TESTING
+
 with torch.no_grad():
+    # Predictions on test data
     outputs = model(test_samples)
     _, predictions = torch.max(outputs.data, 1)
     confusion_mtx = np.zeros((num_classes, num_classes))
@@ -142,6 +144,19 @@ with torch.no_grad():
 
     accuracy = sum(np.diag(confusion_mtx))/sum(sum(confusion_mtx)) * 100
 
+    # Predictions on mesh
+    num_samples = 100
+    x1, x2 = np.meshgrid(np.linspace(-1, 1, num_samples), \
+        np.linspace(-1, 1, num_samples))
+    x1 = x1.astype(np.float32)
+    x2 = x2.astype(np.float32)
+    mesh_samples = np.array([x1, x2]).reshape(2, -1).T
+    mesh_samples = utils.numpy_to_torch(mesh_samples)
+
+    mesh_labels = model(mesh_samples)
+    _, mesh_labels = torch.max(mesh_labels.data, 1)
+    mesh_labels = mesh_labels.reshape(num_samples, num_samples)
+
 # %% PLOTS
 
 os.makedirs('./../results/ex2', exist_ok=True)
@@ -149,8 +164,18 @@ path = './../results/ex2/'
 
 plt.figure(figsize=(8,8))
 ax = plt.gca()
+save_res = path + 'samples_NN_dataset_' + datafile + '_size_' + str(training_size)\
+    + '_method_' + str(training_method)
+np.random.seed(34)
+random_idx = np.random.randint(num_train_samples, size=1000)
+plt.contourf(x1, x2, mesh_labels, alpha=0.2, levels=np.linspace(0, 5, 100))
+utils.plot_data2D(train_samples[random_idx], train_labels[random_idx], ax=ax,
+    xlimits=[-1,1], ylimits=[-1,1], show=False, save=save_res)
+
+plt.figure(figsize=(8,8))
+ax = plt.gca()
 save_res = path + 'accuracy_NN_dataset_' + datafile + '_size_' + str(training_size)\
-     + '_method_' + str(training_method)
+    + '_method_' + str(training_method)
 utils.plot_confusion_matrix(confusion_mtx, ax=ax, map_min=0, map_max=1000,
     title_text=r'ACCURACY: %.2f %%'%(accuracy), show=False, save=save_res)
 

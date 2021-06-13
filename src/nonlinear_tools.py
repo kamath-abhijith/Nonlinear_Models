@@ -60,5 +60,3 @@ class conv_network(nn.Module):
         x = F.relu(x)
         x = self.linear2(x)
         return F.log_softmax(x, dim=1)
-
-# %% SUPPORT VECTOR MACHINE

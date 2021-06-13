@@ -47,7 +47,7 @@ parser = argparse.ArgumentParser(
 
 parser.add_argument('--dataset', help="training and testing dataset", default='mnist')
 parser.add_argument('--method', help="method of optimisation", default='Adam')
-parser.add_argument('--num_epochs', help="number of epochs", type=int, default=10)
+parser.add_argument('--num_epochs', help="number of epochs", type=int, default=20)
 parser.add_argument('--force_train', help="force training", type=bool, default=True)
 
 args = parser.parse_args()

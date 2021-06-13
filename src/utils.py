@@ -20,8 +20,11 @@ from torch.utils.data import Dataset, DataLoader
 from sklearn.model_selection import train_test_split
 
 from matplotlib import pyplot as plt
+from matplotlib import colors as mcolors
 
 # %% PLOTTING
+
+colour_list = list(mcolors.BASE_COLORS)
 
 def plot_confusion_matrix(data, ax=None, xaxis_label=r'PREDICTED CLASS',
     yaxis_label=r'TRUE CLASS', map_min=0.0, map_max=1.0, title_text=None,
@@ -77,7 +80,58 @@ def plot_signal(x, y, ax=None, title_text=None, xaxis_label=None,
 
     return
 
+def plot_data2D(samples, labels, ax=None, title_text=None,
+    xlimits=[0,2], ylimits=[0,1], show=True, save=False):
+    ''' Plots 2D data with labels '''
+    if ax is None:
+        fig = plt.figure(figsize=(8,8))
+        ax = plt.gca()
+
+    for _, label in enumerate(np.unique(labels)):
+        samples_with_label = samples[np.where(labels==label)]
+
+        plt.scatter(samples_with_label[:,0], samples_with_label[:,1],
+            color=colour_list[int(label)])
+
+    plt.xlabel(r'$x_1$')
+    plt.ylabel(r'$x_2$')
+    plt.title(title_text)
+
+    plt.ylim(ylimits)
+    plt.xlim(xlimits)
+
+    if save:
+        plt.savefig(save + '.pdf', format='pdf')
+
+    if show:
+        plt.show()
+
+    return
+
 # %% DATASETS
+
+class Synthetic_2D(Dataset):
+
+    def __init__(self, datafile):
+        if datafile == 'noise0':
+            data = np.loadtxt('./../data/2class-Synthetic/data_noise_0.txt',
+                delimiter=",", dtype=np.float32)
+        elif datafile == 'noise20':
+            data = np.loadtxt('./../data/2class-Synthetic/data_noise_20.txt',
+                delimiter=",", dtype=np.float32)
+        elif datafile == 'noise40':
+            data = np.loadtxt('./../data/2class-Synthetic/data_noise_40.txt',
+                delimiter=",", dtype=np.float32)
+
+        self.samples = data[:,:2]
+        self.labels = data[:,2]
+        self.num_samples = data.shape[0]
+
+    def __getitem__(self, index):
+        return self.samples[index], self.labels[index]
+
+    def __len__(self):
+        return self.num_samples
 
 class Board(Dataset):
     
