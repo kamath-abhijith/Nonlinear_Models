@@ -11,6 +11,7 @@ abijithj@iisc.ac.in
 
 import os
 import numpy as np
+import pandas as pd
 import seaborn as sns
 import torch
 
@@ -187,6 +188,51 @@ class mnist(Dataset):
     def __len__(self):
         return self.num_samples
 
+class Neuro_Dataset(Dataset):
+
+    def __init__(self, parcellation):
+        pos_samples = []
+        pos_filepath = './../data/Neuro_dataset/Normal_Subjects/'
+        pos_paths = os.listdir(pos_filepath)
+        for _, path in enumerate(pos_paths):
+            data = io.loadmat(pos_filepath + path)
+            pos_samples.append(data[parcellation])
+        pos_samples = np.array(pos_samples, dtype=np.float32)
+        num_pos_samples = pos_samples.shape[0]
+
+        neg_samples = []
+        neg_filepath = './../data/Neuro_dataset/Alzheimer_Subjects/'
+        neg_paths = os.listdir(neg_filepath)
+        for _, path in enumerate(neg_paths):
+            data = io.loadmat(neg_filepath + path)
+            neg_samples.append(data[parcellation])
+        neg_samples = np.array(neg_samples, dtype=np.float32)
+        num_neg_samples = neg_samples.shape[0]
+
+        self.samples = np.vstack([pos_samples, neg_samples])[:,None]
+        self.labels = np.hstack([np.ones(num_pos_samples), np.zeros(num_neg_samples)])
+        self.num_samples = num_pos_samples + num_neg_samples
+
+    def __getitem__(self, index):
+        return self.samples[index], self.labels[index]
+
+    def __len__(self):
+        return self.num_samples
+
+class EEG_Data(Dataset):
+
+    def __init__(self):
+        data = np.array(pd.read_csv('./../data/EEG/eeg_data.csv', skiprows=1))[:,1:].astype(np.float32)
+
+        self.num_samples, dim = data.shape
+        self.samples = data[:,:dim-1]
+        self.labels = data[:,dim-1]
+
+    def __getitem__(self, index):
+        return self.samples[index], self.labels[index]
+
+    def __len__(self):
+        return self.num_samples
 
 # %% DATA PROCESSING
 
