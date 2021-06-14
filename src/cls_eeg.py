@@ -49,35 +49,27 @@ datafile = 'EEG'
 dataset = utils.EEG_Data()
 
 train_samples, test_samples, train_labels, test_labels = \
-    utils.train_test_splitter(dataset.samples, dataset.labels)
+    utils.train_test_splitter(dataset.samples, dataset.labels,
+    split_fraction=0.5)
 
 num_train_samples, input_dim = train_samples.shape
 output_dim = len(np.unique(train_labels))
 
-train_samples = utils.numpy_to_torch(train_samples)
-test_samples = utils.numpy_to_torch(test_samples)
+train_samples = utils.numpy_to_torch(train_samples)[:,None]
+test_samples = utils.numpy_to_torch(test_samples)[:,None]
 train_labels = utils.numpy_to_torch(train_labels).type(torch.LongTensor) - 1
 test_labels = utils.numpy_to_torch(test_labels).type(torch.LongTensor) - 1
 
 # %% MODEL PARAMETERS
 
-hidden1_dim = 5000
-hidden2_dim = 800
 num_classes = output_dim
-num_epochs = 100
+num_epochs = 1000
 training_method = 'Adam'
 
-model = nonlinear_tools.deep_network(input_dim, hidden1_dim, hidden2_dim, output_dim)
-criterion = nn.CrossEntropyLoss()
+model = nonlinear_tools.eeg_network()
 
-if training_method == 'SGD':
-    learning_rate = 0.01
-    optimiser = torch.optim.SGD(model.parameters(), lr=learning_rate)
-elif training_method == 'Adam':
-    learning_rate = 0.1
-    mom_weights = (0.9, 0.999)
-    optimiser = torch.optim.Adam(model.parameters(), lr=learning_rate,
-        betas=mom_weights)
+learning_rate = 0.01
+optimiser = torch.optim.Adagrad(model.parameters(), lr=learning_rate)
 
 # %% TRAINING
 
@@ -106,7 +98,7 @@ else:
 
         # Forward pass
         outputs = model(train_samples[random_idx])
-        loss = criterion(outputs, train_labels[random_idx])
+        loss = F.nll_loss(outputs, train_labels[random_idx])
         training_error[epoch] = loss.item()
         
         # Backward and optimize
@@ -114,7 +106,7 @@ else:
         loss.backward()
         optimiser.step()
         
-        if (epoch+1) % num_epochs/10 == 0:
+        if (epoch+1) % 10 == 0:
             print (f'Epoch [{epoch+1}/{num_epochs}], Loss: {loss.item():.4f}')
     
     torch.save(model, path + 'model_DN_dataset_' + datafile + '_size_' + \
@@ -143,7 +135,7 @@ plt.figure(figsize=(8,8))
 ax = plt.gca()
 save_res = path + 'accuracy_DN_dataset_' + datafile + '_size_' + str(training_size)\
     + '_method_' + str(training_method)
-utils.plot_confusion_matrix(confusion_mtx, ax=ax, map_min=0, map_max=1000,
+utils.plot_confusion_matrix(confusion_mtx, ax=ax, map_min=0, map_max=500,
     title_text=r'ACCURACY: %.2f %%'%(accuracy), show=False, save=save_res)
 
 plt.figure(figsize=(8,8))
@@ -153,4 +145,5 @@ save_res = path + 'loss_DN_dataset_' + datafile + '_size_' + str(training_size)\
 utils.plot_signal(np.arange(1,num_epochs+1), training_error, ax=ax,
     xaxis_label=r'EPOCHS', yaxis_label=r'TRAINING ERROR', xlimits=[0,num_epochs],
     ylimits=[0,20], show=False, save=save_res)
+
 # %%
